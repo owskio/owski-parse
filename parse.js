@@ -16,11 +16,13 @@ K = require('owski-primitives').K,
 parser = curry(function(defn,onSuccess,input){
   var
   parsed = defn(input);
+  //console.log('parsed: ',parsed);
   if (parsed) {
     var
     consumed = parsed.length,
     remainder = input.slice(consumed);
-    console.log('onSuccess(parsed,remainder): ',onSuccess(parsed,remainder));
+    //console.log('parsed,remainder : ',parsed,'|',remainder);
+    //console.log('onSuccess(parsed,remainder): ',onSuccess(parsed,remainder));
     return onSuccess(parsed,remainder)(remainder);
   }
 }),
@@ -32,9 +34,18 @@ char = parser(function(input){
 }),
 many = function(someParser){
   return someParser(function(match){
-    return many(someParser)(function(matches){
-      return K([match].concat(matches));
-    });
+    // console.log('match: ',match);
+    return function(input){
+      var
+      rest = many(someParser)(input);
+      return rest
+       ? [match].concat(rest)
+       : [match];
+    };
+    // (function(matches){
+    //   console.log('matches: ',matches);
+    //   return K([match].concat(matches));
+    // });
   });
 },
 protocol = parser(function(input){
