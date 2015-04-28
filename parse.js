@@ -9,14 +9,11 @@ K = require('owski-primitives').K,
 
 parser = curry(function(defn,onSuccess,input){
   var
-  parsed = defn(input);
-  if (parsed) {
-    var
-    consumed = parsed && parsed.length,
-    remainder = input.slice(consumed),
-    nextParser = onSuccess(parsed);
-    return nextParser && nextParser(remainder);
-  }
+  parsed = defn(input),
+  consumed = parsed && parsed.length,
+  remainder = input.slice(consumed),
+  nextParser = onSuccess(parsed);
+  return nextParser && nextParser(remainder);
 }),
 char = parser(function(input){
   var
@@ -35,24 +32,52 @@ char = parser(function(input){
 //     };
 //   });
 // },
+// many1 = curry(function(someParser,onSuccess){
+//   return someParser(function(match){
+//     console.log('match0: ',match);
+//     return match
+//     ? many(someParser,onSuccess)
+//     : onSuccess(match);
+//   });
+//   // var result = many1(someParser,function(matches){
+//   //
+//   // });
+//   // console.log('result: ',result);
+//   // return result
+//   // || onSuccess([]);
+// }),
+// many = curry(function(someParser,onSuccess){
+//   return someParser(function(match){
+//     console.log('match: ',match);
+//     return many1(someParser,function(matches){
+//       console.log('matches: ',matches);
+//       return K([match].concat(matches));
+//       // return matches.length
+//       //   ? onSuccess([match].concat(matches))
+//       //   : K([match]);
+//     });
+//   });
+// }),
+// many = curry(function(someParser,onSuccess){
+//   return someParser(function(match){
+//     console.log(match);
+//     return match ?
+//       many(someParser,function(matches){
+//         console.log(matches);
+//         return onSuccess([match].concat(matches));
+//       })
+//       : onSuccess([match]);
+//   });
+// }),
 many = curry(function(someParser,onSuccess){
-  var result = many1(someParser,function(matches){
-
-  });
-  console.log('result: ',result);
-  return result
-  || onSuccess([]);
-}),
-many1 = curry(function(someParser,onSuccess){
   return someParser(function(match){
-    console.log('match: ',match);
-    return many(someParser,function(matches){
-      console.log('matches: ',matches);
-      return K([match].concat(matches));
-      // return matches.length
-      //   ? onSuccess([match].concat(matches))
-      //   : K([match]);
-    });
+    console.log(match);
+    return match ?
+    many(someParser,function(matches){
+      console.log(matches);
+      return onSuccess([match].concat(matches));
+    })
+    : onSuccess([]);
   });
 }),
 protocol = parser(function(input){
@@ -70,4 +95,8 @@ proHost =
     });
   });
 eyes.inspect(proHost('http://www.google.com'));
-eyes.inspect(many(char,function(x){return K(x);})('git://www.google.com'));
+eyes.inspect(
+  many(char,function(x){return K(x);})(
+    'git://www.google.com'
+  )
+);
