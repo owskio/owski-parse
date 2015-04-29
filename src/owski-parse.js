@@ -63,22 +63,17 @@ separated = function(someParser,separatorParser,then){
   var
   discardParser = function(then){
     return separatorParser(function(separator){
-      console.log('separator: ',separator);
       return someParser(function(parsed){
         return then(parsed);
       });
     });
   };
   return someParser(function(match){
-    console.log('match: ',match);
     return many(discardParser,function(matches){
-      console.log('matches: ',matches);
       return then([match].concat(matches));
     });
   });
-},
-
-z;
+};
 
 expose(module,{
   parser: parser,
