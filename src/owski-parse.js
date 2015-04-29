@@ -31,10 +31,8 @@ digit = regexParser(/^\d/),
 
 many = curry(function(someParser,then){
   return someParser(function(match){
-    console.log('match: ',match);
     return match
     ? many(someParser,function(matches){
-        console.log('matches: ',matches);
         return then([match].concat(matches));
       })
     : then([]);
@@ -61,13 +59,26 @@ or = curry(function(parserA,parserB,then){
 //                      return (a:as)
 separated = function(someParser,separatorParser,then){
   var
-  discardParser = function(then){
-    return separatorParser(function(separator){
-      return someParser(function(parsed){
-        return then(parsed);
-      });
-    });
-  };
+  //  //Ideally, the direct translation below would work,
+  //  //but the application of separatorParser to its then
+  //  //expects input now, instead of its own then, which
+  //  //is what we need a parser to need.
+  //  discardParser = separatorParser(function(separator){
+  //    return someParser;
+  //  });
+
+  //  //More verbose, also works, here for clarity
+  //  discardParser = function(then){
+  //    return separatorParser(function(separator){
+  //      return someParser(function(parsed){
+  //        return then(parsed);
+  //      });
+  //    });
+  //  };
+
+  //Discard the result of the first parser, keep second
+  discardParser = compose(separatorParser,K,someParser);
+  //Take the first, then treat the rest as many (junk,gold) pairs
   return someParser(function(match){
     return many(discardParser,function(matches){
       return then([match].concat(matches));
