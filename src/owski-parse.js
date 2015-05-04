@@ -57,26 +57,26 @@ or = curry(function(parserA,parserB,then){
 //  p ‘sepby1‘ sep = do a <- p
 //                      as <- many (do {sep; p})
 //                      return (a:as)
-separated = function(someParser,separatorParser,then){
-  var
-  //  //Ideally, the direct translation below would work,
-  //  //but the application of separatorParser to its then
-  //  //expects input now, instead of its own then, which
-  //  //is what we need a parser to need.
-  //  discardParser = separatorParser(function(separator){
-  //    return someParser;
-  //  });
 
-  //  //More verbose, also works, here for clarity
-  //  discardParser = function(then){
-  //    return separatorParser(function(separator){
-  //      return someParser(function(parsed){
-  //        return then(parsed);
-  //      });
-  //    });
-  //  };
+//  //Ideally, the direct translation below would work,
+//  //but the application of separatorParser to its then
+//  //expects input now, instead of its own then, which
+//  //is what we need a parser to need.
+//  discardParser = separatorParser(function(separator){
+//    return someParser;
+//  });
 
+//  //More verbose, also works, here for clarity
+//  discardParser = function(then){
+//    return separatorParser(function(separator){
+//      return someParser(function(parsed){
+//        return then(parsed);
+//      });
+//    });
+//  };
+separated = curry(function(someParser,separatorParser,then){
   //Discard the result of the first parser, keep second
+  var
   discardParser = compose(separatorParser,K,someParser);
   //Take the first, then treat the rest as many (junk,gold) pairs
   return someParser(function(match){
@@ -84,14 +84,14 @@ separated = function(someParser,separatorParser,then){
       return then([match].concat(matches));
     });
   });
-};
+});
 
 expose(module,{
-  parser: parser,
-  regexParser: regexParser,
-  many: many,
-  wordChar: wordChar,
-  separated:separated,
-  puctuationChar:puctuationChar,
-  or: or
+  parser:         parser,
+  regexParser:    regexParser,
+  many:           many,
+  wordChar:       wordChar,
+  separated:      separated,
+  puctuationChar: puctuationChar,
+  or:             or
 });
