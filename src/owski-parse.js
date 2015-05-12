@@ -20,14 +20,29 @@ parser = curry(function(parse,then,input){
 
 regexParser = function(pattern){
   return parser(function(input){
+    //console.log(pattern,' : ',input.slice(0,50));
     var
     arr = input.match(pattern);
     return arr && arr[0];
   });
 },
-wordChar = regexParser(/^\w/),
-puctuationChar = regexParser(/^\W/),
-digit = regexParser(/^\d/),
+regexWordChar = regexParser(/^\w/),
+regexNonWordChar = regexParser(/^\W/),
+regexDigit = regexParser(/^\d/),
+regexNumber = regexParser(/^\d+/),
+whitespace = regexParser(/^[\s\r\n]+/),
+space = regexParser(/^\s/),
+line = regexParser(/^.*?\r\n/),
+
+string = function(str){
+  //console.log('str: ',str);
+  return parser(function(input){
+    //console.log('input: ',input.slice(0,50));
+    return input.slice(0,str.length) === str
+      ? str
+      : undefined;
+  });
+},
 
 many = curry(function(someParser,then){
   return someParser(function(match){
@@ -74,24 +89,91 @@ or = curry(function(parserA,parserB,then){
 //      });
 //    });
 //  };
-separated = curry(function(someParser,separatorParser,then){
+separatedBy = curry(function(separatorParser,someParser,then){
   //Discard the result of the first parser, keep second
+  //console.log('sep by arguments: \n',arguments);
   var
   discardParser = compose(separatorParser,K,someParser);
   //Take the first, then treat the rest as many (junk,gold) pairs
   return someParser(function(match){
+    console.log('match: ',match );
     return many(discardParser,function(matches){
+      //console.log('matches: ',matches );
       return then([match].concat(matches));
     });
   });
-});
+}),
+letter = parser(function(input){
+  var
+  code = input.charCodeAt(0),
+  isLetter = 97 <= code && code <= 122
+          && 65 <= code && code <= 90;
+  return isLetter ? input[0] : undefined;
+}),
+word = many(letter),
+versionChars = regexParser(/[\d\.]+/),
+pdfVersion = function(then){
+  console.log('going into string');
+  return string('%PDF-')(function(x){
+    console.log('x: ',x);
+    return versionChars(then);
+  });
+},
+pdfObjectContents = parser(function(input){
+  var
+  matches = input.match(/^([\s\S]+?)endobj/);
+  return matches
+  ? matches[1]
+  : undefined;
+}),
+pdfObject = function(then){
+  //console.log('then: ',then);
+  return line(function(l){
+  return line(function(l){
+    return regexNumber(function(objectReference){
+      //console.log('objectReference: ',objectReference);
+      return space(function(_){
+        return regexNumber(function(objectRefCountNumber){
+          //console.log('objectRefCountNumber: ',objectRefCountNumber);
+          return space(function(_){
+            return string('obj')(function(_){
+              return pdfObjectContents(function(contents){
+                console.log('pdfObjectContents: ',contents.slice(0,300));
+                return string('endobj')(function(){
+                  return then({
+                    objectReference: objectReference,
+                    objectRefCountNumber: objectRefCountNumber,
+                    contents: contents
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+  });
+},
+pdfObjects = separatedBy(whitespace,pdfObject),
+pdf = function(then){
+  return pdfVersion(function(number){
+    console.log('version: ',number);
+    return pdfObjects(function(objects){
+      console.log('objects: ',objects);
+      return then({ version: number, objects: objects});
+    });
+  })
+},
+z;
 
 expose(module,{
   parser:         parser,
   regexParser:    regexParser,
   many:           many,
-  wordChar:       wordChar,
-  separated:      separated,
-  puctuationChar: puctuationChar,
-  or:             or
+  regexWordChar:       regexWordChar,
+  separatedBy:      separatedBy,
+  regexNonWordChar: regexNonWordChar,
+  or:             or,
+  pdf: pdf
 });

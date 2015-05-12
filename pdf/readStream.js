@@ -46,17 +46,29 @@ q.denodeify(fs.readFile)('inst.pdf','binary')
   }
   var indent = 0;
   pretty = function(str){
-    return str.replace(/((>>)|(<<))(.*)/,function(whole,alt,close,open,code){
-      //console.log(arguments);
+    var
+    result = '',
+    matches,
+    patt = /((>>)|(<<))([^><]*)/g;
+    while(matches = patt.exec(str)){
+      try{
+      var
+      close = matches[2],
+      open = matches[3],
+      code = matches[4];
       if (open) {
         indent++;
-        return '\r\n' + '  '.repeat(indent) + '<<' + pretty(code);
+        result  +=  '\r\n'
+                +   '  '.repeat(indent) + '<<' + code + '\r\n';
       } else {
+        result +=  '  '.repeat(indent) + '>>' + '\r\n'
+                 + '  '.repeat(indent) + code;
         indent--;
-        return  '\r\n' + '  '.repeat(indent+1) + '>>'
-              + '\r\n' + '  '.repeat(indent+1) + pretty(code);
       }
-    });
+      }catch(e){ break; }
+    }
+    console.log('Result: \n',result);
+    return result;
   };
   console.log('BEFORE PRETTIED: \n',pdf);
   var prettied = pretty(pdf);

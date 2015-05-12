@@ -10,9 +10,9 @@
     "eyes": "^0.1.8",
     "mocha": "^2.2.4",
     "must": "^0.12.0",
-    "owski-curry": "0.0.1",
-    "owski-expose": "0.0.1",
-    "owski-primitives": "0.0.1"
+    "owski-curry": "*",
+    "owski-expose": "*",
+    "owski-primitives": "*"
   },
   "devDependencies": {
     "mocha": "^2.2.4"
