@@ -1,29 +1,32 @@
 
 var
 eyes = require('eyes'),
-Promise = require('owski-promise'),
+p = require('owski-promise'),
+Promise = p.Promise,
 curry = require('owski-curry').curry,
+K = require('owski-primitives').K,
+l = function(){
+  console.log.apply(this,arguments);
+},
 
-parser = curry(function(parse,then,input){
-  var thisParser = Promise();
-  var cont = thisParser.then(function(input){
-    var
-    parsed = parse(input),
-    consumed = parsed.length,
-    remainder = input.slice(consumed);
-    nextParser = then(parsed);
-
+parser = curry(function(parse,back,input){
+  var here = Promise();
+  var there = here.then(function(input){
+    var result = parse(input);
+    var rest = input.slice(result.length);
+    var whatever = back(result)(rest);
     setTimeout(function(){
-      nextParser.resolve(remainder);
+      whatever.resolveWith(rest);
     },0);
-
-    return nextParser;
+    return whatever;
   });
-  thisParser.resolve(input);
-  return cont;
+  here.resolveWith(input);
+  return there;
 }),
-retern = function(thing){
-  return Promise(thing);
+retern = function(z){
+  return function(){
+    return Promise(z);
+  };
 },
 
 protocol = parser(function(input){
@@ -35,11 +38,14 @@ host = parser(function(input){
   return arr && arr[0];
 }),
 proHost = protocol(function(pro){
+  console.log('pro: ',pro);
   return host(function(host){
-    return retern({pro: pro, host: host});
+    console.log('host: ',host);
+    return retern({retPro: pro, retHost: host});
   });
 });
-
-eyes.inspect(
-  proHost('http://www.google.com')
-);
+var result = proHost('http://www.google.com')
+.then(function(x){
+  console.log('Final Result:');
+  eyes.inspect(x);
+});
