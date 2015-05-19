@@ -18,7 +18,8 @@
     "mocha": "^2.2.4"
   },
   "scripts": {
-    "test": "mocha tests/*.mocha.js"
+    "test": "mocha tests/*.mocha.js",
+    "test-promises":"mocha tests/parse-promises.mocha.js"
   },
   "author": "Ted Cackowski Jr",
   "license": "MIT",
