@@ -18,13 +18,9 @@ parser = curry(function(parse,back,input){
   var here = Promise();
   var there = here.then(function(input){
     var result = parse(input);
-    l('result: ',result);
     var consumed = result ? result.length : 0;
     var rest = input.slice(consumed);
     var whatever = back(result)(rest);
-    // setTimeout(function(){
-    //   whatever.resolveWith(rest);
-    // },0);
     return whatever;
   });
   setTimeout(function(){
@@ -66,6 +62,7 @@ string = function(str){
 
 many = curry(function(someParser,then){
   return someParser(function(match){
+    console.log('match:',match);
     return match
     ? many(someParser,function(matches){
       return then([match].concat(matches));
@@ -116,8 +113,9 @@ separatedBy = curry(function(separatorParser,someParser,then){
   discardParser = compose(separatorParser,K,someParser);
   //Take the first, then treat the rest as many (junk,gold) pairs
   return someParser(function(match){
+    console.log('sep_match: ',match);
     return many(discardParser,function(matches){
-      //console.log('matches: ',matches );
+      console.log('sep_matches: ',matches );
       return then([match].concat(matches));
     });
   });
@@ -132,9 +130,9 @@ letter = parser(function(input){
 word = many(letter),
 versionChars = regexParser(/[\d\.]+/),
 pdfVersion = function(then){
-  console.log('going into string');
+  //console.log('going into string');
   return string('%PDF-')(function(x){
-    console.log('x: ',x);
+    //console.log('x: ',x);
     return versionChars(then);
   });
 },
@@ -157,13 +155,23 @@ pdfObject = function(then){
           return space(function(_){
             return string('obj')(function(_){
               return pdfObjectContents(function(contents){
-                console.log('pdfObjectContents: ',contents.slice(0,300));
+                //console.log('pdfObjectContents: ',contents.slice(0,300));
                 return string('endobj')(function(){
-                  return then({
+                  var result = objectReference
+                  ? {
                     objectReference: objectReference,
                     objectRefCountNumber: objectRefCountNumber,
-                    contents: contents
-                  });
+                    contents: contents.slice(0,20)
+                  }
+                  : undefined;
+                  console.log('result: ');
+                  eyes.inspect(result);
+                  return then(result);
+                  // return then({
+                  //   objectReference: objectReference,
+                  //   objectRefCountNumber: objectRefCountNumber,
+                  //   contents: contents.slice(0,20)
+                  // });
                 });
               });
             });
@@ -177,9 +185,10 @@ pdfObject = function(then){
 pdfObjects = separatedBy(whitespace,pdfObject),
 pdf = function(then){
   return pdfVersion(function(number){
-    console.log('version: ',number);
+    //console.log('version: ',number);
     return pdfObjects(function(objects){
-      console.log('objects: ',objects);
+      console.log('objects: ');
+      eyes.inspect(objects);
       return then({ version: number, objects: objects});
     });
   })

@@ -10,26 +10,26 @@ require('owski-primitives').mport(function(K){
 require('../src/owski-parse-promises-pdf').mport(function(or,regexWordChar,regexNonWordChar,many,separatedBy,pdf,retern){
 
   describe('parse',function(){
-    describe('char',function(){
-      it('must parse a single ascii character',function(done){
-        regexWordChar(function(c){
-          return retern(c);
-        })('qwer').then(function(c){
-          c.must.be('q');
-          done();
-        });
-      });
-    });
-
-    describe('many',function(){
-      it('takes a parser and returns [parsedStrings]',function(){
-        many(regexWordChar,retern)(
-          'git://www.google.com'
-        ).then(function(x){
-          x.must.eql(['g','i','t']);
-        });
-      });
-    });
+    // describe('char',function(){
+    //   it('must parse a single ascii character',function(done){
+    //     regexWordChar(function(c){
+    //       return retern(c);
+    //     })('qwer').then(function(c){
+    //       c.must.be('q');
+    //       done();
+    //     });
+    //   });
+    // });
+    //
+    // describe('many',function(){
+    //   it('takes a parser and returns [parsedStrings]',function(){
+    //     many(regexWordChar,retern)(
+    //       'git://www.google.com'
+    //     ).then(function(x){
+    //       x.must.eql(['g','i','t']);
+    //     });
+    //   });
+    // });
 
     // describe('or',function(){
     //   it('yields the result of either parser',function(){
@@ -60,12 +60,14 @@ require('../src/owski-parse-promises-pdf').mport(function(or,regexWordChar,regex
 
     describe('PDF',function(){
       it('must give us something reasonable to look at',function(done){
+        //this.timeout(10000);
         this.timeout(0);
         fs.readFile('pdf/inst.pdf','binary',function(err,pdfData){
           console.log('READFILE: ',pdfData.slice(0,30));
-          pdf(function(pdfObject){
-            //console.log('pdfObject: ',pdfObject);
-            retern(pdfObject);
+          pdf(function(p){
+            console.log('pdf: ');
+            eyes.inspect(p);
+            retern(p);
           })(pdfData).then(function(x){
             eyes.inspect(x);
             done();
