@@ -64,12 +64,17 @@ require('../src/owski-parse-promises-pdf').mport(function(or,regexWordChar,regex
         this.timeout(0);
         fs.readFile('pdf/inst.pdf','binary',function(err,pdfData){
           console.log('READFILE: ',pdfData.slice(0,30));
-          pdf(function(p){
+          var promise = pdf(function(p){
             console.log('pdf: ');
             eyes.inspect(p);
-            retern(p);
-          })(pdfData).then(function(x){
+            console.log('pdf - 1');
+            return retern(p);
+          })(pdfData);
+          console.log('promise: ',promise);
+          promise.then(function(x){
+            console.log('pdf - 2');
             eyes.inspect(x);
+            console.log('pdf - 3');
             done();
           });
         });

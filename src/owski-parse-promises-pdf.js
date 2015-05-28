@@ -14,25 +14,30 @@ l = function(){
   console.log.apply(console,arguments);
 },
 
-parser = curry(function(parse,back,input){
-  var here = Promise();
-  var there = here.then(function(input){
-    var result = parse(input);
-    var consumed = result ? result.length : 0;
-    var rest = input.slice(consumed);
-    var whatever = back(result)(rest);
-    return whatever;
-  });
-  setTimeout(function(){
-    here.resolveWith(input);
-  },0);
-  return there;
-}),
 retern = function(z){
+  console.log('z: ',z);
   return function(){
+    console.log('returning Promise(z)');
     return Promise(z);
   };
 },
+parser = curry(function(parse,back,input){
+  var block = Promise();
+  var tackle = block.then(function(input){
+    var result = parse(input);
+    var consumed = result ? result.length : 0;
+    var rest = input.slice(consumed);
+    var maybeNextParser =  back(result);
+    if(!maybeNextParser){ console.log('result: ',result); }
+    var nextParser = maybeNextParser || retern(undefined);
+    return nextParser(rest);
+  });
+  setTimeout(function(){
+    block.resolveWith(input);
+  },0);
+  return tackle;
+}),
+
 
 regexParser = function(pattern){
   return parser(function(input){
@@ -62,7 +67,7 @@ string = function(str){
 
 many = curry(function(someParser,then){
   return someParser(function(match){
-    console.log('match:',match);
+    //console.log('match:',match);
     return match
     ? many(someParser,function(matches){
       return then([match].concat(matches));
@@ -98,14 +103,20 @@ or = curry(function(parserA,parserB,then){
 //    return someParser;
 //  });
 
-//  //More verbose, also works, here for clarity
+//  //More verbose, here for clarity
 //  discardParser = function(then){
-//    return separatorParser(function(separator){
-//      return someParser(function(parsed){
-//        return then(parsed);
-//      });
-//    });
+//    return separator( function(s){
+//    return some(function(p){
+//        return then(p);
+//    });});
 //  };
+
+ // discardParser = function(then){
+ //   return separator(function(){
+ //   return some(then);
+ //   });
+ // };
+
 separatedBy = curry(function(separatorParser,someParser,then){
   //Discard the result of the first parser, keep second
   //console.log('sep by arguments: \n',arguments);
@@ -113,9 +124,9 @@ separatedBy = curry(function(separatorParser,someParser,then){
   discardParser = compose(separatorParser,K,someParser);
   //Take the first, then treat the rest as many (junk,gold) pairs
   return someParser(function(match){
-    console.log('sep_match: ',match);
+    //console.log('sep_match: ',match);
     return many(discardParser,function(matches){
-      console.log('sep_matches: ',matches );
+      //console.log('sep_matches: ',matches );
       return then([match].concat(matches));
     });
   });
@@ -157,16 +168,31 @@ pdfObject = function(then){
               return pdfObjectContents(function(contents){
                 //console.log('pdfObjectContents: ',contents.slice(0,300));
                 return string('endobj')(function(){
-                  var result = objectReference
-                  ? {
-                    objectReference: objectReference,
-                    objectRefCountNumber: objectRefCountNumber,
-                    contents: contents.slice(0,20)
-                  }
-                  : undefined;
-                  console.log('result: ');
-                  eyes.inspect(result);
-                  return then(result);
+
+                  return then(
+                    contents
+                    ? {
+                      objectReference: objectReference,
+                      objectRefCountNumber: objectRefCountNumber,
+                      contents: contents.slice(0,20)
+                    }
+                    : undefined
+                  );
+
+                  // var result = objectReference
+                  // ? {
+                  //   objectReference: objectReference,
+                  //   objectRefCountNumber: objectRefCountNumber,
+                  //   contents: contents.slice(0,20)
+                  // }
+                  // : undefined;
+                  // console.log('result: ');
+                  // eyes.inspect(result);
+                  // return then(result);
+
+                  // console.log('objectReference: ', objectReference);
+                  // console.log('objectRefCountNumber: ', objectRefCountNumber);
+                  // console.log('contents: ', contents);
                   // return then({
                   //   objectReference: objectReference,
                   //   objectRefCountNumber: objectRefCountNumber,
@@ -187,8 +213,8 @@ pdf = function(then){
   return pdfVersion(function(number){
     //console.log('version: ',number);
     return pdfObjects(function(objects){
-      console.log('objects: ');
-      eyes.inspect(objects);
+      // console.log('objects: ');
+      // eyes.inspect(objects);
       return then({ version: number, objects: objects});
     });
   })
@@ -196,13 +222,13 @@ pdf = function(then){
 z;
 
 expose(module,{
-  parser:         parser,
-  regexParser:    regexParser,
-  many:           many,
-  regexWordChar:       regexWordChar,
+  parser:           parser,
+  regexParser:      regexParser,
+  many:             many,
+  regexWordChar:    regexWordChar,
   separatedBy:      separatedBy,
   regexNonWordChar: regexNonWordChar,
-  or:             or,
-  pdf: pdf,
-  retern: retern
+  or:               or,
+  pdf:              pdf,
+  retern:           retern
 });
