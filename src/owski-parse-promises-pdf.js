@@ -131,14 +131,7 @@ separatedBy = curry(function(separatorParser,someParser,then){
     });
   });
 }),
-letter = parser(function(input){
-  var
-  code = input.charCodeAt(0),
-  isLetter = 97 <= code && code <= 122
-          && 65 <= code && code <= 90;
-  return isLetter ? input[0] : undefined;
-}),
-word = many(letter),
+
 versionChars = regexParser(/[\d\.]+/),
 pdfVersion = function(then){
   //console.log('going into string');
@@ -150,9 +143,7 @@ pdfVersion = function(then){
 pdfObjectContents = parser(function(input){
   var
   matches = input.match(/^([\s\S]+?)endobj/);
-  return matches
-  ? matches[1]
-  : undefined;
+  return matches ? matches[1] : undefined;
 }),
 pdfObject = function(then){
   //console.log('then: ',then);

@@ -10,28 +10,29 @@ undefined = primitives.undefined,
 compose = require('owski-apply').compose,
 p = require('owski-promise'),
 Promise = p.Promise,
+
+
 retern = function(z){
   console.log('z: ',z);
-  return function(){
+  return function(input){
     console.log('returning Promise(z)');
     return Promise(z);
   };
 },
 parser = curry(function(parse,back,input){
   var block = Promise();
-  var tackle = block.then(function(input){
-    var result = parse(input);
-    var consumed = result ? result.length : 0;
-    var rest = input.slice(consumed);
-    var maybeNextParser =  back(result);
-    if(!maybeNextParser){ console.log('result: ',result); }
-    var nextParser = maybeNextParser || retern(undefined);
-    return nextParser(rest);
-  });
   setTimeout(function(){
     block.resolveWith(input);
   },0);
-  return tackle;
+  return block.then(function(input){
+    var
+    result = parse(input),
+    consumed = result ? result.length : 0,
+    rest = input.slice(consumed),
+    maybeNextParser =  back(result),
+    nextParser = maybeNextParser || retern(undefined);
+    return nextParser(rest);
+  });
 }),
 regexParser = function(pattern){
   return parser(function(input){
@@ -43,6 +44,8 @@ regexParser = function(pattern){
 rexWord = regexParser(/^\w+/),
 whitespace = regexParser(/^[\s\r\n]+/),
 space = regexParser(/^\s/),
+digits = regexParser(/^\d+/),
+
 many = curry(function(someParser,then){
   return someParser(function(match){
     //console.log('match:',match);
@@ -68,20 +71,58 @@ separatedBy = curry(function(separatorParser,someParser,then){
   });
 }),
 blahs = separatedBy(whitespace,rexWord),
+
+// obj = function(then){
+//   return digits(function(ds){
+//   return space( function(s){
+//   console.log('1: ');
+//   return blahs( function(bs){
+//     console.log('2: ');
+//     console.log('ds: ',ds);
+//     return then(bs);
+//   });});});
+// },
+
 obj = function(then){
-  console.log('1: ');
-  return blahs(function(bs){
-    console.log('2: ');
-    return then(bs);
-  });
+  return digits(function(ds){
+  return space( function(s){
+    console.log('1: ');
+    return blahs(then);
+  });});
 },
 
-promise = obj(function(p){
+// obj = digits(function(ds){
+//   return space( function(s){
+//     console.log('1: ');
+//     return blahs;
+//   });}),
+z;
+// obj = digits(function(ds){
+//   return space( function(s){
+//   console.log('1: ');
+//   return blahs( function(bs){
+//     console.log('2: ');
+//     console.log('ds: ',ds);
+//     return retern(bs);
+//   });});
+// }),
+
+
+console.log('obj: ',obj);
+var testObj = obj(function(){
+  console.log('Arguments: ',arguments);
+});
+console.log(testObj);
+var
+promiseMaybe = obj(function(p){
   console.log('simple: ');
   eyes.inspect(p);
   console.log('simple - 1');
   return retern(p);
-})('asdf qwer poiu lkjh');
+});
+console.log('promiseMaybe: ',promiseMaybe);
+var
+promise = promiseMaybe('9876 asdf qwer poiu lkjh');
 
 promise.then(function(x){
   console.log('simple - 2');
