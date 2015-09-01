@@ -1,6 +1,5 @@
 
 
-///////////////////////////////////////////////////////////////////////////////////////////////
 var expose     = require('owski-expose')
   , curry      = require('owski-curry').curry
   , eyes       = require('eyes')
@@ -64,6 +63,10 @@ Parser.prototype.as = function(fn){
         return me.parse(input);
       })
       .then(function(results){
+        if(!results || !results[0]){
+          log('Returning dummy parser: "',results,'"');
+          return undefined;//Parse has failed
+        }
         var nextParser  = fn.apply(me,results)
           , remainder   = results[1]
           ;
@@ -102,11 +105,18 @@ regexParser = function(pattern){
     return regexParser(new RegExp('^' + str));
   }
   , until = function(string){
-    var pattern = new RegExp('^([\s\S]+?)' + string);
-    return regexParser(pattern);
+    var pattern = new RegExp('^([\s\S\r\n]+?)' + string);
+    return Parser(function(input){
+      var
+      arr = input.match(pattern),
+      result = arr && arr[1] || '',//what if matching empty string??
+      rest = result ? input.slice(result.length) : input;
+      return [result,rest];
+    });
   }
   , many = function(someParser){
     return someParser.as(function(match){
+      log('MATCH?: ',match);
       return match ?
       many(someParser).as(function(matches){
         return end([match].concat(matches));
@@ -135,8 +145,10 @@ regexParser = function(pattern){
 
 
   , pdfObject =
-           emptyLines      .as(function(){
-    return number          .as(function(objectReference){
+           //emptyLines      .as(function(){
+    //return
+           number          .as(function(objectReference){
+             log('OBJECT Number: ['+objectReference+']');
     return space           .as(function(){
     return number          .as(function(objectRefCountNumber){
     return space           .as(function(){
@@ -147,7 +159,7 @@ regexParser = function(pattern){
       objectReference:      objectReference,
       objectRefCountNumber: objectRefCountNumber,
       contents:             contents.slice(0,20)
-    });});});});});});});});})
+    });});});});});});});})//;})
 
   , pdfObjects = separatedBy(whitespace,pdfObject)
 
@@ -155,24 +167,24 @@ regexParser = function(pattern){
   , pdfVersion =
            string('%PDF-').as(function(){
     return versionChars   .as(function(version){
-    return line           .as(function(line1,rest1){
-    return line           .as(function(line2,rest2){
+    return line           .as(function(line1){
+    return line           .as(function(gobbly){
     return end(
       version
     );});});});})
   , pdf =
            pdfVersion.as(function(number){
-    //return pdfObjects.as(function(objects){
+    return pdfObjects.as(function(objects){
     return end({
         version: number
-      //, objects: objects
-    });})//;})
+      , objects: objects
+    });});})
   ;
   fs.readFile('../pdf/inst.pdf',{encoding:'utf8'}, function (e, data) {
     log('---------------------------------------------------');
-    log(data.slice(0,50));
+    log(data.slice(0,50) + 'endobj');
     log('---------------------------------------------------');
-    pdf.parse(data.slice(0,50)).then(function(result){
+    pdf.parse(data.slice(0,50) + 'endobj').then(function(result){
       log('FINISHED!!!: ',result);
     });
   });
